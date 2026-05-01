@@ -35,13 +35,14 @@ apt-get install -y \
     make \
     nfs-common \
     nginx \
+    libnginx-mod-http-brotli-filter \
     patch \
     pkg-config \
     protobuf-compiler \
     python-is-python3 \
     python3-pip \
     python3-venv \
-    python3.8 \
+    python3.9 \
     s3cmd \
     subversion \
     texinfo \
