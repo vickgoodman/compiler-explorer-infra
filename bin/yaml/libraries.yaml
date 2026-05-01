@@ -1431,6 +1431,30 @@ libraries:
         targets:
         - main
         type: github
+      beman_cache_latest:
+        build_type: none
+        check_file: README.md
+        method: nightlyclone
+        repo: bemanproject/cache_latest
+        targets:
+        - main
+        type: github
+      beman_copyable_function:
+        build_type: none
+        check_file: README.md
+        method: nightlyclone
+        repo: bemanproject/copyable_function
+        targets:
+        - main
+        type: github
+      beman_cstring_view:
+        build_type: none
+        check_file: README.md
+        method: nightlyclone
+        repo: bemanproject/cstring_view
+        targets:
+        - main
+        type: github
       beman_execution:
         build_type: none
         check_file: README.md
@@ -1444,6 +1468,14 @@ libraries:
         check_file: README.md
         method: nightlyclone
         repo: bemanproject/exemplar
+        targets:
+        - main
+        type: github
+      beman_indices_view:
+        build_type: none
+        check_file: README.md
+        method: nightlyclone
+        repo: bemanproject/indices_view
         targets:
         - main
         type: github
@@ -1471,6 +1503,14 @@ libraries:
         targets:
         - main
         type: github
+      beman_map:
+        build_type: none
+        check_file: README.md
+        method: nightlyclone
+        repo: bemanproject/map
+        targets:
+        - main
+        type: github
       beman_net:
         build_type: none
         check_file: README.md
@@ -1487,6 +1527,14 @@ libraries:
         targets:
         - main
         type: github
+      beman_scan_view:
+        build_type: none
+        check_file: README.md
+        method: nightlyclone
+        repo: bemanproject/scan_view
+        targets:
+        - main
+        type: github
       beman_scope:
         build_type: none
         check_file: README.md
@@ -1495,11 +1543,51 @@ libraries:
         targets:
         - main
         type: github
+      beman_span:
+        build_type: none
+        check_file: README.md
+        method: nightlyclone
+        repo: bemanproject/span
+        targets:
+        - main
+        type: github
+      beman_take_before:
+        build_type: none
+        check_file: README.md
+        method: nightlyclone
+        repo: bemanproject/take_before
+        targets:
+        - main
+        type: github
       beman_task:
         build_type: none
         check_file: README.md
         method: nightlyclone
         repo: bemanproject/task
+        targets:
+        - main
+        type: github
+      beman_timed_lock_alg:
+        build_type: none
+        check_file: README.md
+        method: nightlyclone
+        repo: bemanproject/timed_lock_alg
+        targets:
+        - main
+        type: github
+      beman_transform_view:
+        build_type: none
+        check_file: README.md
+        method: nightlyclone
+        repo: bemanproject/transform_view
+        targets:
+        - main
+        type: github
+      beman_utf_view:
+        build_type: none
+        check_file: README.md
+        method: nightlyclone
+        repo: bemanproject/utf_view
         targets:
         - main
         type: github
