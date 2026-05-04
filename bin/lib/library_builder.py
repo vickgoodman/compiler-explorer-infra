@@ -613,7 +613,8 @@ class LibraryBuilder:
                 compileroptions += " -latomic"
 
             cxx_flags = f"{compileroptions} {archflag} {stdverflag} {stdlibflag} {extraflags}"
-            c_flags = f"{compileroptions} {archflag} {extraflags}"
+            c_compileroptions = re.sub(r"-std=c\+\+\w+\s*", "", compileroptions).strip()
+            c_flags = f"{c_compileroptions} {archflag} {extraflags}"
             asm_flags = f"{archflag}"
 
             expanded_configure_flags = [
