@@ -697,14 +697,20 @@ class RustLibraryBuilder:
                     stdlibs,
                     build_supported_flagscollection,
                 ):
-                    buildstatus = self.makebuildfor(
-                        compiler, options, exe, compilerType, toolchain, *args, ldPath, source_staging
-                    )
-                    if buildstatus == BuildStatus.Ok:
-                        builds_succeeded = builds_succeeded + 1
-                    elif buildstatus == BuildStatus.Skipped:
-                        builds_skipped = builds_skipped + 1
-                    else:
+                    try:
+                        buildstatus = self.makebuildfor(
+                            compiler, options, exe, compilerType, toolchain, *args, ldPath, source_staging
+                        )
+                        if buildstatus == BuildStatus.Ok:
+                            builds_succeeded = builds_succeeded + 1
+                        elif buildstatus == BuildStatus.Skipped:
+                            builds_skipped = builds_skipped + 1
+                        else:
+                            builds_failed = builds_failed + 1
+                    except Exception:
+                        # Broad catch is intentional: one bad combination (e.g. conan rejecting a setting)
+                        # must not abort the rest of the batch.
+                        self.logger.exception(f"Build of {compiler} {args} failed with an unexpected exception")
                         builds_failed = builds_failed + 1
 
                 if builds_succeeded > 0:
