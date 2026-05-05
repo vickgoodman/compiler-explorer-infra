@@ -613,7 +613,8 @@ class LibraryBuilder:
                 compileroptions += " -latomic"
 
             cxx_flags = f"{compileroptions} {archflag} {stdverflag} {stdlibflag} {extraflags}"
-            c_flags = f"{compileroptions} {archflag} {extraflags}"
+            c_compileroptions = re.sub(r"-std=c\+\+\w+\s*", "", compileroptions).strip()
+            c_flags = f"{c_compileroptions} {archflag} {extraflags}"
             asm_flags = f"{archflag}"
 
             expanded_configure_flags = [
@@ -683,7 +684,8 @@ class LibraryBuilder:
                     f'{targetparams} "-DCMAKE_BUILD_TYPE={buildtype}" {toolchainparam} {sysrootparam} '
                     f'"-DCMAKE_CXX_FLAGS{cmake_flags_suffix}={cxx_flags}" "-DCMAKE_C_FLAGS{cmake_flags_suffix}={c_flags}" '
                     f'"-DCMAKE_ASM_FLAGS{cmake_flags_suffix}={asm_flags}" {extracmakeargs} {sourcefolder} '
-                    f"> cecmakelog.txt 2>&1\n"
+                    f"> cecmakelog.txt 2>&1 || "
+                    f"{{ echo 'cmake configure failed:' >&2; tail -200 cecmakelog.txt >&2; exit 1; }}\n"
                 )
                 self.logger.debug(cmakeline)
                 f.write(cmakeline)
@@ -702,11 +704,16 @@ class LibraryBuilder:
 
                 if len(self.buildconfig.make_targets) != 0:
                     if len(self.buildconfig.make_targets) == 1 and self.buildconfig.make_targets[0] == "all":
-                        f.write(f"cmake --build . {extramakeargs} > cemakelog_.txt 2>&1\n")
+                        f.write(
+                            f"cmake --build . {extramakeargs} > cemakelog_.txt 2>&1 || "
+                            f"{{ echo 'cmake --build failed:' >&2; tail -200 cemakelog_.txt >&2; exit 1; }}\n"
+                        )
                     else:
                         for lognum, target in enumerate(self.buildconfig.make_targets):
+                            log_name = f"cemakelog_{lognum}.txt"
                             f.write(
-                                f"cmake --build . {extramakeargs} --target={target} > cemakelog_{lognum}.txt 2>&1\n"
+                                f"cmake --build . {extramakeargs} --target={target} > {log_name} 2>&1 || "
+                                f"{{ echo 'cmake --build {target} failed:' >&2; tail -200 {log_name} >&2; exit 1; }}\n"
                             )
                 else:
                     lognum = 0
@@ -730,10 +737,13 @@ class LibraryBuilder:
                         f.write("}\n")
 
                 if self.buildconfig.package_install:
-                    f.write("cmake --install . > ceinstall_0.txt 2>&1\n")
+                    f.write(
+                        "cmake --install . > ceinstall_0.txt 2>&1 || "
+                        "{ echo 'cmake --install failed:' >&2; tail -200 ceinstall_0.txt >&2; exit 1; }\n"
+                    )
             else:
                 if os.path.exists(os.path.join(sourcefolder, "Makefile")):
-                    f.write("make clean || /bin/true\n")
+                    f.write("make clean > cemakeclean.txt 2>&1 || /bin/true\n")
                 f.write("rm -f *.so*\n")
                 f.write("rm -f *.a\n")
                 f.write(self.script_env("CXXFLAGS", cxx_flags))
@@ -748,12 +758,14 @@ class LibraryBuilder:
                     configurepath = os.path.join(sourcefolder, self.buildconfig.source_folder, "configure")
                     if os.path.exists(configurepath):
                         if self.buildconfig.package_install:
-                            f.write(
-                                f"./configure {configure_flags} --prefix={installfolder}"
-                                f" > {logdir}ceconfiglog.txt 2>&1\n"
-                            )
+                            configure_cmd = f"./configure {configure_flags} --prefix={installfolder}"
                         else:
-                            f.write(f"./configure {configure_flags} > {logdir}ceconfiglog.txt 2>&1\n")
+                            configure_cmd = f"./configure {configure_flags}"
+                        configure_log = f"{logdir}ceconfiglog.txt"
+                        f.write(
+                            f"{configure_cmd} > {configure_log} 2>&1 || "
+                            f"{{ echo 'configure failed:' >&2; tail -200 {configure_log} >&2; exit 1; }}\n"
+                        )
 
                 for line in self.buildconfig.prebuild_script:
                     f.write(f"{line}\n")
@@ -1626,25 +1638,31 @@ class LibraryBuilder:
                 build_supported_os, buildtypes, archs, stdvers, stdlibs, build_supported_flagscollection
             ):
                 iteration += 1
-                with self.install_context.new_staging_dir() as staging:
-                    buildstatus = self.makebuildfor(
-                        compiler,
-                        options,
-                        exe,
-                        compilerType,
-                        toolchain,
-                        *args,
-                        self.compilerprops[compiler]["ldPath"],
-                        staging,
-                        self.compilerprops[compiler],
-                        iteration,
-                    )
-                    if buildstatus == BuildStatus.Ok:
-                        builds_succeeded = builds_succeeded + 1
-                    elif buildstatus == BuildStatus.Skipped:
-                        builds_skipped = builds_skipped + 1
-                    else:
-                        builds_failed = builds_failed + 1
+                try:
+                    with self.install_context.new_staging_dir() as staging:
+                        buildstatus = self.makebuildfor(
+                            compiler,
+                            options,
+                            exe,
+                            compilerType,
+                            toolchain,
+                            *args,
+                            self.compilerprops[compiler]["ldPath"],
+                            staging,
+                            self.compilerprops[compiler],
+                            iteration,
+                        )
+                        if buildstatus == BuildStatus.Ok:
+                            builds_succeeded = builds_succeeded + 1
+                        elif buildstatus == BuildStatus.Skipped:
+                            builds_skipped = builds_skipped + 1
+                        else:
+                            builds_failed = builds_failed + 1
+                except Exception:
+                    # Broad catch is intentional: one bad combination (e.g. conan rejecting a setting)
+                    # must not abort the rest of the batch.
+                    self.logger.exception(f"Build of {compiler} {args} failed with an unexpected exception")
+                    builds_failed = builds_failed + 1
 
             if builds_succeeded > 0:
                 self.upload_builds()
